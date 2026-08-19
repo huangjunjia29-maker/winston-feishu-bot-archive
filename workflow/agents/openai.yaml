@@ -1,0 +1,6 @@
+interface:
+  display_name: "Feishu Workflow"
+  short_description: "Runs jielong social scraping and Base backfill"
+  default_prompt: "Use $feishu-workflow to run or maintain Feishu jielong social workflows."
+policy:
+  allow_implicit_invocation: true

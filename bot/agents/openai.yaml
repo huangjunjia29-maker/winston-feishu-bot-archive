@@ -1,0 +1,6 @@
+interface:
+  display_name: "Feishu Bot"
+  short_description: "Routes Feishu @bot commands to local workflows"
+  default_prompt: "Use $feishu-bot to inspect or update the Feishu command listener."
+policy:
+  allow_implicit_invocation: true

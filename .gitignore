@@ -1,0 +1,36 @@
+# Local secrets and runtime configuration
+*.env
+bot/.env
+workflow/env/*.env
+
+# Browser/login profile assets
+workflow/assets/chrome-cdp-profile/
+
+# Runtime and generated output
+exports/
+logs/
+tmp/
+bot/tmp/
+workflow/tmp/
+false
+*.xlsx
+*.xlsm
+*.csv
+*.jsonl
+
+# Python/runtime caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local editor and environment files
+.venv/
+venv/
+node_modules/
+.DS_Store
+Thumbs.db
+
+# Machine-local activation evidence
+ACTIVATED.local
