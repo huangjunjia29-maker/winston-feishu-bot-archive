@@ -64,6 +64,12 @@ python -X utf8 bot/scripts/feishu_bot.py listen
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\bot\scripts\run_listener.ps1
 ```
 
+安装当前用户登录自启动：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\install_autostart.ps1
+```
+
 查看工作流参数：
 
 ```powershell
@@ -98,12 +104,15 @@ python -X utf8 workflow/modules/social_metrics.py --start-cdp-profile
 
 明确 `@温斯顿` 后发送未注册为业务命令的文本，会进入灵算自由聊天。聊天使用按“群 + 用户”隔离的本地短期上下文；发送 `清空聊天`、`清空对话` 或 `忘记对话` 可清除当前上下文。聊天回答不能触发抓取或 Base 写入。
 
+`WINSTON_CHAT_ALLOWED_CHAT_IDS` 可配置仅开放自由聊天的群聊。此类群聊中的注册业务命令会被静默忽略，不会启动抓取或 Base 工作流。
+
 长任务的静默心跳默认每 300 秒汇报一次；工作流产生新阶段、完成或失败事件时仍即时通知。
 
 ## 配置文件
 
 ```text
 bot/.env
+bot/chat.env
 workflow/env/global.env
 workflow/env/cdp.env
 workflow/env/chats.env
@@ -111,6 +120,10 @@ workflow/env/bases.env
 ```
 
 这些文件可能包含敏感信息，不得提交、打印或对外发送。发布副本不包含任何代码内置的私人 Base、表、视图或字段标识；业务资源必须通过环境配置提供。
+
+`海外市场账号` 必须使用独立来源配置：`WEEKLY_ACCOUNT_BASE_TOKEN`、
+`WEEKLY_ACCOUNT_SOURCE_TABLE`、`WEEKLY_ACCOUNT_SOURCE_VIEW`。不要误用目标
+Base；真实坐标只保存在本机 `workflow/env/bases.env`，不得提交 GitHub。
 
 ## CDP 浏览器
 

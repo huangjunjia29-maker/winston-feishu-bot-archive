@@ -1,4 +1,4 @@
-﻿---
+---
 name: feishu-workflow
 description: Feishu/Lark business workflow library and runner for jielong export, social public metric scraping, XLSX preservation, Base backfill, all-platform 72h refresh, workflow registry, env files, exports, logs, and Chrome CDP assets.
 ---
@@ -22,6 +22,9 @@ This skill owns the business work. The bot listener should call this runner as a
   - `env/chats.env`
   - `env/bases.env`
   - `env/cdp.env`
+- Dedicated overseas-account source configuration in `env/bases.env`:
+  `WEEKLY_ACCOUNT_BASE_TOKEN`, `WEEKLY_ACCOUNT_SOURCE_TABLE`, and
+  `WEEKLY_ACCOUNT_SOURCE_VIEW`. Keep these separate from the target Base.
 - CDP profile: `assets/chrome-cdp-profile`
 - Logs: `tmp/feishu_workflow_logs`
 - XLSX outputs: workspace `exports`
@@ -260,7 +263,14 @@ read 海外账号表 -> parse explicit date range -> create/reuse same-Base rang
 Rules:
 
 - Bot trigger is `海外市场账号 <YYYYMMDD-YYYYMMDD>`; the date range argument is required.
-- Source Base is the fixed overseas account Base. Source table is `海外账号表`, view `全部账号`.
+- Source Base is portable configuration, not a hard-coded resource. Require
+  `WEEKLY_ACCOUNT_BASE_TOKEN`, `WEEKLY_ACCOUNT_SOURCE_TABLE`, and
+  `WEEKLY_ACCOUNT_SOURCE_VIEW` for live runs. The configured table must resolve
+  to `海外账号表` (or an explicitly documented equivalent), and the view to
+  `全部账号` (or an explicitly documented equivalent). It must contain the
+  fields `账号名称`, `国家`, `账号链接`, `备注`, `属性`, and `大区`.
+- Never silently reuse `FEISHU_BASE_TOKEN` as the overseas source. A missing or
+  invalid dedicated source configuration must fail before scraping or writes.
 - Result table name is the requested date range: `YYYY.MM.DD-YYYY.MM.DD`.
 - Result fields are exactly, in order: `账号`, `发帖链接`, `正文内容`, `发布日期`, `曝光`, `点赞`, `收藏`, `评论`, `转发`.
 - `曝光`, `点赞`, `收藏`, `评论`, and `转发` are number fields. `曝光` normalizes platform-specific view/play/browse/impression metrics into one column.
@@ -285,6 +295,9 @@ Rules:
 - LinkedIn slow feed collection must preserve randomized waits for home read, posts feed read, card read before/after expansion, and scroll settle. Hard checkpoint/security/captcha states keep the current CDP page open without refresh/navigation and notify that manual verification is needed. The workflow polls the current page until hard markers disappear and `valid_linkedin_page_state` is true, then continues the same account. If verification is not cleared before `WEEKLY_ACCOUNT_LINKEDIN_MANUAL_CHALLENGE_TIMEOUT_S` (default 3600 seconds), only that account fails; LinkedIn is not platform-halted. Soft `li.protechts.net`/invisible recaptcha markers are logged only.
 - F009 filters TikTok candidates by decoding the video id timestamp before detail scraping when possible, uses that timestamp as a publish-date fallback, and avoids full account scans by stopping after a newly observed video is older than the requested range.
 - F009 does not wait for manual social-platform login by default; login walls are recorded and the batch continues. Set `WEEKLY_ACCOUNT_ALLOW_MANUAL_LOGIN=1` only for attended repair runs.
+- F009 `--dry-run` reads and validates the dedicated source accounts and reports
+  the plan only. It must not create result tables, scrape social platforms,
+  write Base records, or create real JSONL/XLSX artifacts.
 - YouTube account timelines use channel Atom RSS when a channel id can be resolved; date-range mode stops at the first RSS entry older than the requested range. YouTube records may additionally fill `曝光` from a lightweight video-page view-count parse; failure to read views must not block RSS records.
 - Account results are persisted account by account after detail filtering, so a long run preserves completed local data even if a later account fails.
 - Posts without a readable publish date are skipped and reported; only posts whose `发布日期` falls inside the requested date range are written.

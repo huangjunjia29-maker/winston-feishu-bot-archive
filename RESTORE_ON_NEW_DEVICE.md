@@ -26,6 +26,7 @@ lark-cli auth status --json --verify
 
 ```text
 bot/.env
+bot/chat.env
 workflow/env/chats.env
 workflow/env/bases.env
 ```
@@ -45,6 +46,15 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\configure_lingsuan_cha
 ```
 
 默认模型为 `gpt-5.6-terra`，接口为 `https://lingsuan.org/v1/responses`。温斯顿的人格与说话风格保存在代码默认配置中；本地聊天历史不会跨设备恢复。
+
+在 `bot/.env` 分开设置业务命令群与聊天群：
+
+```text
+JIELONG_BOT_ALLOWED_CHAT_IDS=允许业务命令的群
+WINSTON_CHAT_ALLOWED_CHAT_IDS=仅开放自由聊天的群
+```
+
+聊天群中的业务命令会被静默忽略；两类消息都必须明确 `@温斯顿`。
 
 ## 4. 恢复社媒登录
 
@@ -66,11 +76,31 @@ CDP Profile 不进入 Git。新设备必须重新打开专用浏览器并登录�
 
 先在飞书群执行带 `--dry-run` 的业务命令。确认群、Base、字段、权限和 CDP 登录均正确后，再进行真实写入。
 
+`海外市场账号` 使用独立来源 Base。必须在本机 `workflow/env/bases.env`
+恢复以下三项，真实坐标不得进入仓库：
+
+```text
+WEEKLY_ACCOUNT_BASE_TOKEN=
+WEEKLY_ACCOUNT_SOURCE_TABLE=
+WEEKLY_ACCOUNT_SOURCE_VIEW=
+```
+
+恢复后先执行一次对应日期范围的 `--dry-run`，确认能读取并校验来源账号，
+且没有创建表、抓取、写入或生成实际 JSONL/XLSX 文件。
+
 ## 6. 启动
 
 ```powershell
 .\start_bot.cmd
 ```
+
+需要在每次 Windows 登录后自动唤醒温斯顿时，运行：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\install_autostart.ps1
+```
+
+计划任务会在当前用户登录 3 分钟后隐藏启动监听器。飞书 CLI 凭据属于当前用户，因此不要将监听器改为登录前运行的系统服务。
 
 在允许的群里测试：
 

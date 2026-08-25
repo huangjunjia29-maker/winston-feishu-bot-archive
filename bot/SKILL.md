@@ -1,6 +1,6 @@
-﻿---
+---
 name: feishu-bot
-description: Thin Feishu/Lark command listener that parses group @bot commands, enforces one active background job, supports stop/status/help, routes registered commands to feishu-workflow, and forwards workflow JSONL progress messages back to the command group.
+description: Feishu/Lark listener for Winston business commands and optional LingSuan free chat, with strict @ mention and group isolation, one active workflow job, progress forwarding, and safe routing to feishu-workflow.
 ---
 
 # Feishu Bot
@@ -15,7 +15,21 @@ Main script:
 python <skill-root>\scripts\feishu_bot.py listen
 ```
 
-It loads `<skill-root>\.env`. Keep command-group allowlist and listener-only settings there.
+It loads `<skill-root>\.env` and, when free chat is enabled, `<skill-root>\chat.env`.
+Keep secrets and machine-specific IDs local; templates contain placeholders only.
+
+## Winston Free Chat
+
+Unregistered text explicitly addressed to `@温斯顿` may be routed to the
+provider-neutral LingSuan Responses API (`https://lingsuan.org/v1/responses`)
+with model `gpt-5.6-terra`. This is optional and uses `chat.env`; it does not
+use an OpenAI API key or silently fall back to one. Conversation state is
+isolated by Feishu group and user. `清空聊天`, `清空对话`, and `忘记对话`
+clear only the current group/user history.
+
+Business commands always take priority. Free chat must never start a workflow,
+call scraping tools, or write Feishu Base records. `JIELONG_BOT_REQUIRE_AT=true`
+is mandatory for chat as well as commands.
 
 ## Command Registry
 
@@ -122,13 +136,23 @@ Rules:
 - If no target Base is specified, the bot uses `JIELONG_BOT_DEFAULT_TARGET_BASE`; workflow can still fall back to `env/bases.env`.
 - Unknown aliases fail fast and are reported to the command group.
 
+Two group scopes are intentionally independent:
+
+- `JIELONG_BOT_ALLOWED_CHAT_IDS`: groups where registered business commands may run.
+- `WINSTON_CHAT_ALLOWED_CHAT_IDS`: groups where only explicitly mentioned free chat may run.
+
+A group may appear in both lists. A chat-only group cannot execute business
+commands even when a command is present in the message.
+
 ## Boundary
 
 - Parse command text and map it to a `workflow_id`.
 - Enforce one active job. Reject overlapping workflow commands.
 - Stop the active workflow process tree when receiving `停止工作` / `取消` / `中止`.
 - Forward workflow stdout JSONL events with `event=progress|final|error`.
-- Forward only workflow progress/final/error reports by default. `JIELONG_BOT_HEARTBEAT_SECONDS=0` disables silent-time heartbeat reports.
+- Forward workflow progress/final/error reports by default. The deployed/default
+  silent heartbeat is 300 seconds (5 minutes); stage, final, and error events
+  remain immediate. `JIELONG_BOT_HEARTBEAT_SECONDS=0` disables silent heartbeats.
 - Send all Feishu IM text through the shared Python sender path, which invokes
   the lark-cli JS entrypoint via `node.exe`; do not call `lark-cli.CMD` from
   workflow or report code.
@@ -176,8 +200,14 @@ Use the wrapper for Windows Scheduled Task autostart:
 powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File <skill-root>\scripts\run_listener.ps1
 ```
 
-Recommended task name:
+Install the repository-root `install_autostart.ps1` after foreground validation.
+It registers task `WinstonFeishuBot`, starts after the interactive user's login
+with a three-minute delay, runs hidden, and ignores duplicate instances. The
+interactive identity is required because lark-cli credentials belong to that
+Windows user.
+
+Task name:
 
 ```text
-CodexFeishuBot
+WinstonFeishuBot
 ```

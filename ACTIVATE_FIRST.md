@@ -40,6 +40,7 @@ $ProjectRoot = (Get-Location).Path
 
 ```text
 bot/.env
+bot/chat.env
 workflow/env/global.env
 workflow/env/cdp.env
 workflow/env/chats.env
@@ -64,6 +65,24 @@ BACKFILL_XLSX_DIR=<current-project-root>\exports
 ```
 
 业务资源必须通过环境配置提供，不得写回代码。发布副本已移除原项目的私人 Base/Table/View/Field 默认标识。
+
+同时确认群作用域分离：`JIELONG_BOT_ALLOWED_CHAT_IDS` 只允许业务命令，
+`WINSTON_CHAT_ALLOWED_CHAT_IDS` 只允许自由聊天。聊天群不能触发抓取或 Base
+写入；两种入口都必须明确 @ 正确的机器人。
+
+如启用自由聊天，使用 `configure_lingsuan_chat.ps1` 通过隐藏输入恢复
+`bot/chat.env`。服务固定使用 LingSuan Responses API 和 `gpt-5.6-terra`，
+不得回退到 OpenAI API Key。
+
+`海外市场账号` 还必须独立配置并校验：
+
+```text
+WEEKLY_ACCOUNT_BASE_TOKEN=<overseas-source-base>
+WEEKLY_ACCOUNT_SOURCE_TABLE=<source-table>
+WEEKLY_ACCOUNT_SOURCE_VIEW=<source-view>
+```
+
+不得让它回退或误用目标 `FEISHU_BASE_TOKEN`。
 
 ## 4. 安装本机依赖
 
@@ -134,6 +153,15 @@ python -m compileall -q bot workflow
 
 配置好 Base 后，先执行相应工作流的 `--dry-run`。任何缺少配置、权限、字段或视图的问题都必须先修复，不得用默认值绕过。
 
+海外账号来源恢复后还要执行：
+
+```powershell
+python -X utf8 workflow/scripts/feishu_workflow.py "<YYYYMMDD-YYYYMMDD>" --workflow-id weekly_market_accounts --dry-run
+```
+
+该检查必须能读取来源账号，同时不创建表、不抓取、不写 Base，也不生成
+实际 JSONL/XLSX 文件。
+
 ## 8. 前台监听验证
 
 ```powershell
@@ -156,7 +184,14 @@ python -X utf8 bot/scripts/feishu_bot.py listen
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\bot\scripts\run_listener.ps1
 ```
 
-长期运行可将该命令配置到 Windows 任务计划程序。
+前台监听和目标工作流 dry-run 均通过后，才可安装开机监听：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\install_autostart.ps1
+```
+
+计划任务 `WinstonFeishuBot` 使用当前交互用户，在登录 3 分钟后隐藏启动，
+并忽略重复实例。不要改成登录前运行的系统身份。
 
 ## 10. 激活完成记录
 

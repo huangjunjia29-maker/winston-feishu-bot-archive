@@ -2650,16 +2650,14 @@ def run_weekly_account_posts(
     identity: str = DEFAULT_IDENTITY,
     progress: ProgressCallback | None = None,
 ) -> WeeklyAccountSummary:
-    base_token = (
-        str(base_token or "").strip()
-        or os.getenv("WEEKLY_ACCOUNT_BASE_TOKEN", "").strip()
-        or os.getenv("FEISHU_BASE_TOKEN", "").strip()
-    )
-    source_table_id = os.getenv("WEEKLY_ACCOUNT_SOURCE_TABLE", "").strip() or DEFAULT_SOURCE_TABLE_ID
-    source_view_id = os.getenv("WEEKLY_ACCOUNT_SOURCE_VIEW", "").strip() or DEFAULT_SOURCE_VIEW_ID
+    base_token = str(base_token or "").strip() or os.getenv("WEEKLY_ACCOUNT_BASE_TOKEN", "").strip()
+    source_table_id = os.getenv("WEEKLY_ACCOUNT_SOURCE_TABLE", "").strip()
+    source_view_id = os.getenv("WEEKLY_ACCOUNT_SOURCE_VIEW", "").strip()
     if not base_token:
+        raise RuntimeError("Set dedicated WEEKLY_ACCOUNT_BASE_TOKEN in workflow/env/bases.env.")
+    if not source_table_id or not source_view_id:
         raise RuntimeError(
-            "Set WEEKLY_ACCOUNT_BASE_TOKEN (or FEISHU_BASE_TOKEN) in workflow/env/bases.env."
+            "Set WEEKLY_ACCOUNT_SOURCE_TABLE and WEEKLY_ACCOUNT_SOURCE_VIEW in workflow/env/bases.env."
         )
 
     week = parse_date_range(date_range)
