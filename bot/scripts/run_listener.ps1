@@ -44,7 +44,13 @@ function Get-ChildProcessTreeIds {
 }
 
 function Stop-StaleListenerProcesses {
-  $Processes = Get-CimInstance Win32_Process
+  try {
+    $Processes = @(Get-CimInstance Win32_Process -ErrorAction Stop)
+  } catch {
+    # Process inspection is optional; restricted Windows accounts may deny WMI.
+    Write-Host "[$(Get-Date -Format s)] cannot inspect stale processes; continuing without cleanup: $($_.Exception.Message)"
+    return
+  }
   $Candidates = @(
     $Processes |
       Where-Object {
@@ -80,16 +86,27 @@ while ($true) {
   $Stderr = Join-Path $LogDir "listener-$RunStamp.err.log"
   Write-Host "[$(Get-Date -Format s)] starting listener"
   try {
-    $Process = Start-Process `
-      -FilePath $Python `
-      -ArgumentList @("-X", "utf8", "-u", $Script, "listen") `
-      -WorkingDirectory $SkillRoot `
-      -RedirectStandardOutput $Stdout `
-      -RedirectStandardError $Stderr `
-      -WindowStyle Hidden `
-      -PassThru
-    $Process.WaitForExit()
-    $ExitCode = $Process.ExitCode
+    try {
+      $Process = Start-Process `
+        -FilePath $Python `
+        -ArgumentList @("-X", "utf8", "-u", $Script, "listen") `
+        -WorkingDirectory $SkillRoot `
+        -RedirectStandardOutput $Stdout `
+        -RedirectStandardError $Stderr `
+        -WindowStyle Hidden `
+        -PassThru
+      $Process.WaitForExit()
+      $ExitCode = $Process.ExitCode
+    } catch {
+      # PowerShell 5 can reject Start-Process when PATH/Path differ only by case.
+      # Running from this already-hidden host preserves the same log contract.
+      Write-Host "[$(Get-Date -Format s)] Start-Process failed; using direct hidden-host fallback: $($_.Exception.Message)"
+      $PreviousErrorActionPreference = $ErrorActionPreference
+      $ErrorActionPreference = "Continue"
+      & $Python -X utf8 -u $Script listen 1> $Stdout 2> $Stderr
+      $ExitCode = $LASTEXITCODE
+      $ErrorActionPreference = $PreviousErrorActionPreference
+    }
   } finally {
   }
   Write-Host "[$(Get-Date -Format s)] listener exited code=$ExitCode"
