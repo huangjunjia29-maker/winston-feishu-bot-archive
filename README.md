@@ -106,6 +106,10 @@ python -X utf8 workflow/modules/social_metrics.py --start-cdp-profile
 
 `WINSTON_CHAT_ALLOWED_CHAT_IDS` 可配置仅开放自由聊天的群聊。此类群聊中的注册业务命令会被静默忽略，不会启动抓取或 Base 工作流。
 
+如需在温斯顿私聊中下达业务指令或聊天，将该私聊会话 ID 写入
+`WINSTON_CHAT_ALLOWED_P2P_CHAT_IDS`。这里只允许显式列出的 1:1 会话，不开放
+所有私聊；私聊不需要 `@温斯顿`，群聊仍必须明确 @。
+
 长任务的静默心跳默认每 300 秒汇报一次；工作流产生新阶段、完成或失败事件时仍即时通知。
 
 ## 配置文件

@@ -242,6 +242,7 @@ class ParsedCommand:
 class BotConfig:
     allowed_chat_ids: set[str] = field(default_factory=set)
     chat_only_chat_ids: set[str] = field(default_factory=set)
+    allowed_p2p_chat_ids: set[str] = field(default_factory=set)
     allow_any_chat: bool = False
     source_chat_id: str | None = None
     report_chat_id: str | None = None
@@ -425,6 +426,7 @@ def resolve_ref(ref: str, aliases: dict[str, str], role: str, *, allow_direct: b
 def build_config(args: argparse.Namespace) -> BotConfig:
     allowed = set(env_set("JIELONG_BOT_ALLOWED_CHAT_IDS"))
     chat_only = set(env_set("WINSTON_CHAT_ALLOWED_CHAT_IDS"))
+    allowed_p2p = set(env_set("WINSTON_CHAT_ALLOWED_P2P_CHAT_IDS"))
     for chat_id in getattr(args, "allowed_chat", []) or []:
         allowed.add(chat_id)
 
@@ -477,6 +479,7 @@ def build_config(args: argparse.Namespace) -> BotConfig:
     return BotConfig(
         allowed_chat_ids=allowed,
         chat_only_chat_ids=chat_only,
+        allowed_p2p_chat_ids=allowed_p2p,
         allow_any_chat=getattr(args, "allow_any_chat", False) or env_bool("JIELONG_BOT_ALLOW_ANY_CHAT", False),
         source_chat_id=source_chat_id,
         report_chat_id=report_chat_id,
@@ -1812,15 +1815,20 @@ def start_chat(runtime: BotRuntime, event: dict[str, Any]) -> None:
 
 def event_allowed(event: dict[str, Any], config: BotConfig) -> bool:
     chat_id = str(event.get("chat_id") or "")
-    if event.get("chat_type") != "group":
+    chat_type = str(event.get("chat_type") or "").lower()
+    is_group = chat_type == "group"
+    is_p2p = chat_type in {"p2p", "private", "direct"}
+    if not is_group and not is_p2p:
         return False
-    if (
+    if is_group and (
         not config.allow_any_chat
         and chat_id not in config.allowed_chat_ids
         and chat_id not in config.chat_only_chat_ids
     ):
         return False
-    if config.require_at and not event_mentions_bot(event, config):
+    if is_p2p and not config.allow_any_chat and chat_id not in config.allowed_p2p_chat_ids:
+        return False
+    if is_group and config.require_at and not event_mentions_bot(event, config):
         return False
     return True
 
@@ -1830,7 +1838,12 @@ def command_allowed_in_chat(chat_id: str, config: BotConfig) -> bool:
 
 
 def consume_events(config: BotConfig, timeout: str | None = None, max_events: int | None = None) -> int:
-    if not config.allowed_chat_ids and not config.chat_only_chat_ids and not config.allow_any_chat:
+    if (
+        not config.allowed_chat_ids
+        and not config.chat_only_chat_ids
+        and not config.allowed_p2p_chat_ids
+        and not config.allow_any_chat
+    ):
         raise SystemExit(
             "No allowed command chat configured. Set JIELONG_BOT_ALLOWED_CHAT_IDS, pass --allowed-chat oc_xxx, "
             "or pass --allow-any-chat explicitly."

@@ -52,9 +52,12 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\configure_lingsuan_cha
 ```text
 JIELONG_BOT_ALLOWED_CHAT_IDS=允许业务命令的群
 WINSTON_CHAT_ALLOWED_CHAT_IDS=仅开放自由聊天的群
+WINSTON_CHAT_ALLOWED_P2P_CHAT_IDS=允许温斯顿私聊的会话ID
 ```
 
-聊天群中的业务命令会被静默忽略；两类消息都必须明确 `@温斯顿`。
+聊天群中的业务命令会被静默忽略；群聊消息必须明确 `@温斯顿`。
+显式列入 `WINSTON_CHAT_ALLOWED_P2P_CHAT_IDS` 的 1:1 私聊可直接发送业务命令或聊天，
+不需要 @；其他私聊会被忽略。
 
 ## 4. 恢复社媒登录
 
