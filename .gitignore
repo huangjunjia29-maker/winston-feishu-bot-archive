@@ -18,6 +18,11 @@ false
 *.csv
 *.jsonl
 
+# One-off root-level Feishu migration/audit artifacts
+/*.json
+/*.ndjson
+/build_*.js
+
 # Python/runtime caches
 __pycache__/
 *.py[cod]

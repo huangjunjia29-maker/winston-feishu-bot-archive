@@ -22,6 +22,13 @@ from urllib.parse import parse_qs, unquote, urlparse
 
 import requests
 
+try:
+    from feishu_auth import request as shared_feishu_request
+    from feishu_auth import tenant_access_token as shared_tenant_access_token
+except ImportError:
+    shared_feishu_request = None
+    shared_tenant_access_token = None
+
 def configure_utf8_runtime() -> None:
     os.environ.setdefault("PYTHONUTF8", "1")
     os.environ.setdefault("PYTHONIOENCODING", "utf-8")
@@ -357,6 +364,9 @@ def lark_api_domain() -> str:
 def tenant_access_token(*, force_refresh: bool = False) -> str:
     """Return a process-cached TAT and refresh it only near expiry."""
 
+    if shared_tenant_access_token is not None:
+        return shared_tenant_access_token(force_refresh=force_refresh)
+
     app_id = os.getenv("FEISHU_APP_ID", "").strip()
     app_secret = os.getenv("FEISHU_APP_SECRET", "").strip()
     if not app_id or not app_secret:
@@ -400,6 +410,9 @@ def request_lark_api(
     timeout_s: int = 120,
 ) -> dict[str, Any]:
     """Call Feishu OpenAPI with the process-cached TAT."""
+
+    if shared_feishu_request is not None:
+        return shared_feishu_request(method, path, params=params, json_body=json_body, timeout=timeout_s)
 
     for auth_attempt in range(2):
         token = tenant_access_token(force_refresh=auth_attempt > 0)

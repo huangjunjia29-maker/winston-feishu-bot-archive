@@ -2,6 +2,14 @@
 
 This is a clean release copy of Feishu Bot Workflow.
 
+## Winston runtime contract
+
+Before performing a Feishu task from any Codex conversation using this project,
+read `WINSTON_RUNTIME.md`. It defines the stable App ID/Secret to
+tenant-access-token flow, task routing, approval boundaries, and verification
+requirements. Preserve the existing runtime implementation; do not create a
+conversation-specific substitute.
+
 ## Mandatory first action
 
 Before reading code, starting services, installing dependencies, opening Chrome, or running any workflow, read `ACTIVATE_FIRST.md` in full and follow it in order.
