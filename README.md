@@ -138,3 +138,19 @@ workflow/assets/chrome-cdp-profile
 ```
 
 不要替换为个人 Chrome Profile。首次激活时通过 `--start-cdp-profile`打开浏览器并重新登录所需平台。
+
+## 恢复 Codex 全局温斯顿能力
+
+仓库的 `codex/winston-feishu/` 保存不含凭证的技能模板。新电脑下载项目后，先按 `ACTIVATE_FIRST.md` 安装依赖、恢复本机配置和所需登录，再从项目目录执行：
+
+```powershell
+.\.venv\Scripts\python.exe -X utf8 install_codex_skill.py
+```
+
+脚本会按当前项目路径安装到用户的 `$CODEX_HOME/skills/winston-feishu`（未设置时为 `~/.codex/skills/winston-feishu`），并向用户级 `AGENTS.md` 添加入口。原有指引保留；覆盖前会备份已有文件，重复安装会更新带标记的入口。
+
+如果原全局指引中已有手写的旧温斯顿路径，迁移时须核对并去掉过期入口，避免新旧路径冲突。项目移动后重新运行安装脚本。
+
+重新打开 Codex 后，在新聊天中说：`调用温斯顿，读取这个飞书表格：[链接]`，或使用 `$winston-feishu` 指定技能。
+
+安装后可用项目 Python 执行已安装技能的 `scripts/check_runtime.py --online`，只读验证认证与机器人接口。该备份不包含 Secret、Token、环境文件、浏览器登录态或本机激活记录；仅下载仓库不能自动恢复这些配置，也不会增加飞书资源权限。
